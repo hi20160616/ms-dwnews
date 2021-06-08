@@ -11,7 +11,7 @@
       "https://www.dwnews.com/zone/10000120",
       "https://www.dwnews.com/zone/10000123"
     ],
-    "addr":":10002",
+    "addr":":10004",
     "timeout":"1s",
     "heartbeat":"5m"
   }
