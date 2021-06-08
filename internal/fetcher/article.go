@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/url"
-	"regexp"
 	"strings"
 	"time"
 
@@ -147,19 +146,31 @@ func (a *Article) fetchTitle() (string, error) {
 		return "", fmt.Errorf("[%s] getTitle error, there is no element <title>", configs.Data.MS.Title)
 	}
 	title := n[0].FirstChild.Data
-	rp := strings.NewReplacer(" | 联合早报网", "", " | 早报", "")
-	title = strings.TrimSpace(rp.Replace(title))
+	if strings.Contains(title, "[图集]") {
+		return "", fmt.Errorf("[%s] ignore pic news: %s", configs.Data.MS.Title, a.U.String())
+	}
+	title = strings.TrimSpace(strings.ReplaceAll(title, "｜多维新闻", ""))
 	gears.ReplaceIllegalChar(&title)
 	return title, nil
 }
 
 func (a *Article) fetchUpdateTime() (*timestamppb.Timestamp, error) {
-	if a.raw == nil {
-		return nil, errors.Errorf("[%s] fetchUpdateTime: raw is nil: %s", configs.Data.MS.Title, a.U.String())
+	if a.doc == nil {
+		return nil, errors.Errorf("[%s] fetchUpdateTime: doc is nil: %s", configs.Data.MS.Title, a.U.String())
 	}
-	re := regexp.MustCompile(`"datePublished": "(.*?)",`)
-	rs := re.FindAllSubmatch(a.raw, -1)[0]
-	t, err := time.Parse(time.RFC3339, string(rs[1]))
+	metas := exhtml.MetasByName(a.doc, "parsely-pub-date")
+	cs := []string{}
+	for _, meta := range metas {
+		for _, a := range meta.Attr {
+			if a.Key == "content" {
+				cs = append(cs, a.Val)
+			}
+		}
+	}
+	if len(cs) <= 0 {
+		return nil, fmt.Errorf("[%s] fetchUpdateTime got nothing.", configs.Data.MS.Title)
+	}
+	t, err := time.Parse(time.RFC3339, cs[0])
 	if err != nil {
 		return nil, err
 	}
@@ -196,37 +207,57 @@ func (a *Article) filter(days int) (*Article, error) {
 
 func (a *Article) fetchContent() (string, error) {
 	if a.doc == nil {
-		return "", errors.Errorf("[%s] fetchContent: doc is nil: %s", configs.Data.MS.Title, a.U.String())
+		return "", errors.Errorf("[%s] fetchContent: doc is nil: %s",
+			configs.Data.MS.Title, a.U.String())
 	}
+	doc := a.doc
 	body := ""
 	// Fetch content nodes
-	nodes := exhtml.ElementsByTagAndId(a.doc, "article", "article-body")
+	nodes := exhtml.ElementsByTag(doc, "article")
 	if len(nodes) == 0 {
-		nodes = exhtml.ElementsByTagAndClass(a.doc, "div", "article-content-rawhtml")
+		return "", fmt.Errorf("[%s] There is no tag named `<article>` from: %s",
+			configs.Data.MS.Title, a.U.String())
 	}
-	if len(nodes) == 0 {
-		nodes = exhtml.ElementsByTagAndClass(a.doc, "div", "article-content-container")
+	articleDoc := nodes[0].FirstChild
+	plist := exhtml.ElementsByTag(articleDoc, "p")
+	if articleDoc.FirstChild != nil &&
+		articleDoc.FirstChild.Data == "div" { // to fetch the summary block
+		// body += fmt.Sprintf("\n > %s  \n", plist[0].FirstChild.Data) // redundant summary
+		body += fmt.Sprintf("\n > ")
 	}
-	if len(nodes) == 0 {
-		return "", errors.Errorf("[%s] no content extract from %s", configs.Data.MS.Title, a.U.String())
-	}
-	plist := exhtml.ElementsByTag(nodes[0], "p")
-	for _, v := range plist {
+	for _, v := range plist { // the last item is `推荐阅读：`
 		if v.FirstChild == nil {
 			continue
-		} else if v.FirstChild.FirstChild != nil &&
-			v.FirstChild.Data == "strong" {
-			a := exhtml.ElementsByTag(v, "span")
-			for _, aa := range a {
-				body += aa.FirstChild.Data
+		} else if v.FirstChild.FirstChild != nil && v.FirstChild.Data == "strong" {
+			if d := v.FirstChild.FirstChild.Data; !strings.Contains(d, "↓↓↓") ||
+				!strings.Contains(d, "点击浏览") {
+				body += fmt.Sprintf("\n**%s**  \n", d)
 			}
-			body += "  \n"
+			if t := v.FirstChild.NextSibling; t != nil && t.Type == html.TextNode {
+				body += t.Data
+			}
 		} else {
-			body += v.FirstChild.Data + "  \n"
+			ok := true
+
+			for _, a := range v.Parent.Attr {
+				if a.Key == "class" {
+					switch a.Val {
+					// if it is a info for picture, igonre!
+					case "sc-bdVaJa iHZvIS":
+						ok = false
+					// if it is a twitter content, ignore!
+					case "twitter-tweet":
+						ok = false
+					}
+				}
+			}
+			if ok {
+				body += v.FirstChild.Data + "  \n"
+			}
 		}
 	}
-	body = strings.ReplaceAll(body, "span  \n", "")
-
+	rp := strings.NewReplacer("strong", "", "**推荐阅读：**  \n", "")
+	body = rp.Replace(body)
 	return body, nil
 }
 

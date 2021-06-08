@@ -27,3 +27,8 @@ Just clone and run the command to replace all string in all files, that contains
 cd /path/to/your/folder
 sed -i 's/foo/bar/g' *
 ```
+Then, edit go files to fix new target:
+- modified:   configs/configs.json
+- modified:   internal/fetcher/article.go
+- modified:   internal/fetcher/article_test.go
+- modified:   internal/fetcher/links.go

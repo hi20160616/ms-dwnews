@@ -22,11 +22,9 @@ func fetchLinks() ([]string, error) {
 		}
 		rt = append(rt, links...)
 	}
-	newsWorld := linksFilter(rt, `.*?/news/world/.*`)
-	newsChina := linksFilter(rt, `.*?/news/china/.*`)
-	realtimeWorld := linksFilter(rt, `.*?/realtime/world/.*`)
-	realtimeChina := linksFilter(rt, `.*?/realtime/china/.*`)
-	rt = append(append(append(newsWorld, newsChina...), realtimeWorld...), realtimeChina...)
+	rt = linksFilter(rt, `.*?/.*?/\d{8}/`)
+	rt = kickOutLinksMatchPath(rt, "zone")
+	rt = kickOutLinksMatchPath(rt, "/"+url.QueryEscape("视觉")+"/")
 	return rt, nil
 }
 
@@ -63,16 +61,14 @@ func getLinks(rawurl string) ([]string, error) {
 }
 
 // kickOutLinksMatchPath will kick out the links match the path,
-func kickOutLinksMatchPath(links *[]string, path string) {
+func kickOutLinksMatchPath(links []string, path string) []string {
 	tmp := []string{}
-	// path = "/" + url.QueryEscape(path) + "/"
-	// path = url.QueryEscape(path)
-	for _, link := range *links {
+	for _, link := range links {
 		if !strings.Contains(link, path) {
 			tmp = append(tmp, link)
 		}
 	}
-	*links = tmp
+	return tmp
 }
 
 // TODO: use point to impletement linksFilter
