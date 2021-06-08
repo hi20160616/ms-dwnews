@@ -1,0 +1,16 @@
+{
+  "dbpath":"db",
+  "microservice":{
+    "title":"zaobao",
+    "domain":"www.zaobao.com",
+    "url":[
+      "https://www.zaobao.com/realtime/world",
+      "https://www.zaobao.com/news/world",
+      "https://www.zaobao.com/realtime/china",
+      "https://www.zaobao.com/news/china"
+    ],
+    "addr":":10002",
+    "timeout":"1s",
+    "heartbeat":"5m"
+  }
+}
