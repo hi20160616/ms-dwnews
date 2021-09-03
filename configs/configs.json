@@ -9,7 +9,9 @@
       "https://www.dwnews.com/zone/10000118",
       "https://www.dwnews.com/zone/10000119",
       "https://www.dwnews.com/zone/10000120",
-      "https://www.dwnews.com/zone/10000123"
+      "https://www.dwnews.com/zone/10000123",
+      "https://www.dwnews.com/issue/10107",
+      "https://www.dwnews.com/issue/10070"
     ],
     "addr":":10004",
     "timeout":"1s",
