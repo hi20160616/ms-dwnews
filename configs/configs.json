@@ -1,20 +1,6 @@
 {
-  "dbpath":"db",
-  "microservice":{
-    "title":"dwnews",
-    "domain":"www.dwnews.com",
-    "url":[
-      "https://www.dwnews.com/issue/10062",
-      "https://www.dwnews.com/zone/10000117",
-      "https://www.dwnews.com/zone/10000118",
-      "https://www.dwnews.com/zone/10000119",
-      "https://www.dwnews.com/zone/10000120",
-      "https://www.dwnews.com/zone/10000123",
-      "https://www.dwnews.com/issue/10107",
-      "https://www.dwnews.com/issue/10070"
-    ],
-    "addr":":10004",
-    "timeout":"1s",
-    "heartbeat":"5m"
-  }
+  "debug":false,
+  "verbose":false,
+  "gist": "https://gist.githubusercontent.com/hi20160616/277faf779bee0d0d1525696eff6e8b56/raw/configs.json",
+  "dbpath":"db"
 }

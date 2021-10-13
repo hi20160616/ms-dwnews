@@ -31,9 +31,9 @@ type Article struct {
 
 func NewArticle() *Article {
 	return &Article{
-		WebsiteDomain: configs.Data.MS.Domain,
-		WebsiteTitle:  configs.Data.MS.Title,
-		WebsiteId:     fmt.Sprintf("%x", md5.Sum([]byte(configs.Data.MS.Domain))),
+		WebsiteDomain: configs.Data.MS["dwnews"].Domain,
+		WebsiteTitle:  configs.Data.MS["dwnews"].Title,
+		WebsiteId:     fmt.Sprintf("%x", md5.Sum([]byte(configs.Data.MS["dwnews"].Domain))),
 	}
 }
 
@@ -54,8 +54,8 @@ func (a *Article) Get(id string) (*Article, error) {
 			return a, nil
 		}
 	}
-	return nil, fmt.Errorf("[%s] no article with id: %s, url: %s",
-		configs.Data.MS.Title, id, a.U.String())
+	return nil, fmt.Errorf("[%s] no article with id: %s",
+		configs.Data.MS["dwnews"].Title, id)
 }
 
 func (a *Article) Search(keyword ...string) ([]*Article, error) {
@@ -96,9 +96,9 @@ func (u ByUpdateTime) Less(i, j int) bool {
 }
 
 var timeout = func() time.Duration {
-	t, err := time.ParseDuration(configs.Data.MS.Timeout)
+	t, err := time.ParseDuration(configs.Data.MS["dwnews"].Timeout)
 	if err != nil {
-		log.Printf("[%s] timeout init error: %v", configs.Data.MS.Title, err)
+		log.Printf("[%s] timeout init error: %v", configs.Data.MS["dwnews"].Title, err)
 		return time.Duration(1 * time.Minute)
 	}
 	return t
@@ -146,11 +146,11 @@ func (a *Article) fetchArticle(rawurl string) (*Article, error) {
 func (a *Article) fetchTitle() (string, error) {
 	n := exhtml.ElementsByTag(a.doc, "title")
 	if n == nil {
-		return "", fmt.Errorf("[%s] getTitle error, there is no element <title>", configs.Data.MS.Title)
+		return "", fmt.Errorf("[%s] getTitle error, there is no element <title>", configs.Data.MS["dwnews"].Title)
 	}
 	title := n[0].FirstChild.Data
 	if strings.Contains(title, "[图集]") {
-		return "", fmt.Errorf("[%s] ignore pic news: %s", configs.Data.MS.Title, a.U.String())
+		return "", fmt.Errorf("[%s] ignore pic news: %s", configs.Data.MS["dwnews"].Title, a.U.String())
 	}
 	title = strings.TrimSpace(strings.ReplaceAll(title, "｜多维新闻", ""))
 	gears.ReplaceIllegalChar(&title)
@@ -159,7 +159,7 @@ func (a *Article) fetchTitle() (string, error) {
 
 func (a *Article) fetchUpdateTime() (*timestamppb.Timestamp, error) {
 	if a.doc == nil {
-		return nil, errors.Errorf("[%s] fetchUpdateTime: doc is nil: %s", configs.Data.MS.Title, a.U.String())
+		return nil, errors.Errorf("[%s] fetchUpdateTime: doc is nil: %s", configs.Data.MS["dwnews"].Title, a.U.String())
 	}
 	metas := exhtml.MetasByName(a.doc, "parsely-pub-date")
 	cs := []string{}
@@ -171,7 +171,7 @@ func (a *Article) fetchUpdateTime() (*timestamppb.Timestamp, error) {
 		}
 	}
 	if len(cs) <= 0 {
-		return nil, fmt.Errorf("[%s] fetchUpdateTime got nothing.", configs.Data.MS.Title)
+		return nil, fmt.Errorf("[%s] fetchUpdateTime got nothing.", configs.Data.MS["dwnews"].Title)
 	}
 	t, err := time.Parse(time.RFC3339, cs[0])
 	if err != nil {
@@ -188,7 +188,7 @@ func shanghai(t time.Time) time.Time {
 func (a *Article) fetchContent() (string, error) {
 	if a.doc == nil {
 		return "", errors.Errorf("[%s] fetchContent: doc is nil: %s",
-			configs.Data.MS.Title, a.U.String())
+			configs.Data.MS["dwnews"].Title, a.U.String())
 	}
 	doc := a.doc
 	body := ""
@@ -196,7 +196,7 @@ func (a *Article) fetchContent() (string, error) {
 	nodes := exhtml.ElementsByTag(doc, "article")
 	if len(nodes) == 0 {
 		return "", fmt.Errorf("[%s] There is no tag named `<article>` from: %s",
-			configs.Data.MS.Title, a.U.String())
+			configs.Data.MS["dwnews"].Title, a.U.String())
 	}
 	articleDoc := nodes[0].FirstChild
 	plist := exhtml.ElementsByTag(articleDoc, "p")
